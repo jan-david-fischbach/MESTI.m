@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: mesti
+Version: 0.1.0
+Summary: Python port of MESTI frequency-domain electromagnetic solver
+Author: MESTI contributors
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.26
+Requires-Dist: scipy>=1.11
+Provides-Extra: mumps
+Requires-Dist: pymumps>=0.4.0; extra == "mumps"
+Dynamic: license-file
+
 # MESTI
 
 **MESTI** (<ins>M</ins>axwell's <ins>E</ins>quations <ins>S</ins>olver with <ins>T</ins>housands of <ins>I</ins>nputs) is an open-source software for full-wave electromagnetic simulations in frequency domain using finite-difference discretization on the [Yee lattice](https://meep.readthedocs.io/en/latest/Yee_Lattice).

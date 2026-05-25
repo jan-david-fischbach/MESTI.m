@@ -1,0 +1,38 @@
+[project]
+name = "mesti"
+version = "0.1.0"
+description = "Python port of MESTI frequency-domain electromagnetic solver"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "MESTI contributors" }
+]
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11"
+]
+
+[project.optional-dependencies]
+mumps = [
+  "pymumps>=0.4.0"
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+]
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "python"}
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["python"]
