@@ -181,10 +181,8 @@ def mesti_matrix_solver(
         try:
             X = _solve_with_mumps(A_csc, B_arr)
             info["solver_used"] = "MUMPS"
-        except Exception:
-            lu = spla.splu(A_csc)
-            X = lu.solve(B_arr)
-            info["solver_used"] = "SCIPY_FALLBACK"
+        except Exception as mumps_error:
+            raise RuntimeError("MUMPS solver requested, but MUMPS is unavailable or failed.") from mumps_error
     elif solver in {"MATLAB", "SCIPY"}:
         lu = spla.splu(A_csc)
         X = lu.solve(B_arr)

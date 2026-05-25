@@ -4,6 +4,7 @@ import sys
 import types
 
 import numpy as np
+import pytest
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
@@ -99,3 +100,14 @@ def test_mesti_matrix_solver_mumps_context_compatibility(monkeypatch) -> None:
 
     np.testing.assert_allclose(X, X_ref.reshape(-1, 1), atol=1e-12)
     assert info["solver_used"] == "MUMPS"
+
+
+def test_mesti_matrix_solver_mumps_no_fallback_when_unavailable(monkeypatch) -> None:
+    monkeypatch.setitem(sys.modules, "pymumps", None)
+    monkeypatch.setitem(sys.modules, "mumps", None)
+
+    A = sp.csc_matrix(np.array([[3.0, 1.0], [1.0, 2.0]], dtype=np.complex128))
+    B = np.array([[1.0], [0.0]], dtype=np.complex128)
+
+    with pytest.raises(RuntimeError, match="MUMPS solver requested"):
+        mesti_matrix_solver(A, B, opts={"solver": "MUMPS"})
