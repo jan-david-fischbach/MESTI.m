@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+import types
+
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
@@ -60,3 +63,39 @@ def test_mesti_end_to_end_with_baseline_subtraction() -> None:
     S_with_baseline, _ = mesti(syst, B, C, D=np.ones_like(S_no_baseline), opts={"solver": "SCIPY"})
 
     np.testing.assert_allclose(S_with_baseline, S_no_baseline - 1.0, atol=1e-12)
+
+
+def test_mesti_matrix_solver_mumps_context_compatibility(monkeypatch) -> None:
+    class FakeContext:
+        def __init__(self) -> None:
+            self._A: np.ndarray | None = None
+
+        def set_matrix(self, a: sp.spmatrix, overwrite_a: bool = False, symmetric: bool = False) -> None:
+            del overwrite_a, symmetric
+            self._A = a.toarray()
+
+        def factor(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+            if self._A is None:
+                raise RuntimeError("matrix not set")
+
+        def solve(self, b: np.ndarray, overwrite_b: bool = False) -> np.ndarray:
+            del overwrite_b
+            if self._A is None:
+                raise RuntimeError("matrix not set")
+            return np.linalg.solve(self._A, b)
+
+    fake_pymumps = types.ModuleType("pymumps")
+    fake_mumps = types.ModuleType("mumps")
+    setattr(fake_mumps, "Context", FakeContext)
+    monkeypatch.setitem(sys.modules, "pymumps", fake_pymumps)
+    monkeypatch.setitem(sys.modules, "mumps", fake_mumps)
+
+    A = sp.csc_matrix(np.array([[3.0, 1.0], [1.0, 2.0]], dtype=np.complex128))
+    B = np.array([[1.0], [0.0]], dtype=np.complex128)
+
+    X, info = mesti_matrix_solver(A, B, opts={"solver": "MUMPS"})
+    X_ref = spla.spsolve(A, B)
+
+    np.testing.assert_allclose(X, X_ref.reshape(-1, 1), atol=1e-12)
+    assert info["solver_used"] == "MUMPS"

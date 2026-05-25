@@ -117,7 +117,7 @@ def mesti_build_fdfd_matrix(
 
 
 def _solve_with_mumps(A: sp.spmatrix, B: np.ndarray) -> np.ndarray:
-    # Try the modern pymumps API first.
+    # Try the pymumps API first.
     try:
         from pymumps import Context  # type: ignore
 
@@ -134,9 +134,29 @@ def _solve_with_mumps(A: sp.spmatrix, B: np.ndarray) -> np.ndarray:
             return out
         finally:
             ctx.destroy()
-    except Exception as pymumps_error:
+    except Exception:
+        pass
+
+    # Try the python-mumps API available on conda-forge.
+    try:
+        from mumps import Context  # type: ignore
+
+        ctx = Context()
+        try:
+            ctx.set_matrix(A.tocsc())
+            ctx.factor()
+            out = np.empty_like(B, dtype=np.complex128)
+            for i in range(B.shape[1]):
+                rhs = np.array(B[:, i], dtype=np.complex128, copy=True)
+                out[:, i] = np.asarray(ctx.solve(rhs), dtype=np.complex128)
+            return out
+        finally:
+            destroy = getattr(ctx, "destroy", None)
+            if callable(destroy):
+                destroy()
+    except Exception as mumps_error:
         # Fallback to scipy solver when MUMPS is unavailable/misconfigured.
-        raise RuntimeError("MUMPS solve failed") from pymumps_error
+        raise RuntimeError("MUMPS solve failed") from mumps_error
 
 
 def mesti_matrix_solver(
